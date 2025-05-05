@@ -10,36 +10,82 @@ import GameplayKit
 
 class GameScene: SKScene {
     
+    private var entityManager: EntityManager!
+    
     private var tileMapSystem: TileMapSystem!
+    private var backgroundSystem: BackgroundSystem!
+    private var positionSystem: PositionSystem!
     private var renderSystem: RenderSystem!
     private var physicsSystem: PhysicsSystem!
     private var physicsContactSystem: PhysicsContactSystem!
     private var cameraSystem: CameraSystem!
     private var joystickSystem: JoystickSystem!
     private var attackJoystickSystem: AttackJoystickSystem!
+    private var healthSystem: HealthSystem!
+    private var healthBarRenderingSystem: HealthBarRenderingSystem!
     private var animationSystem: AnimationSystem!
     private var movementSystem: MovementSystem!
     private var inputSystem: InputSystem!
+    private var jumpSystem: JumpSystem!
+    private var inputAttackSystem: InputAttackSystem!
+    private var spawnSystem: SpawnSystem!
     
     private var player: Player!
+    private var slime: Slime!
+    
+    private var spawner: Spawner!
+    
+    // TODO: Delete start
+    private var slime1: Slime!
+    // TODO: Delete end
+    
+    private var backgroundEntity: Background!
     
     var entities = [GKEntity]()
+    let factory = GameEntityFactory()
     
     override func didMove(to view: SKView) {
+        entityManager = EntityManager(scene: self)
         
-        // 1. Включите debug-режим ПЕРВЫМ делом
         view.showsPhysics = true
         self.physicsWorld.gravity = CGVector(dx: 0.0, dy: -120.0)
-        physicsContactSystem = PhysicsContactSystem(scene: self)
-        tileMapSystem = TileMapSystem(scene: self)
+        
         renderSystem = RenderSystem(scene: self)
-        physicsSystem = PhysicsSystem(scene: self)
+        tileMapSystem = TileMapSystem(scene: self)
+        physicsSystem = PhysicsSystem()
+        physicsContactSystem = PhysicsContactSystem(scene: self, entityManager: entityManager)
+        
+        backgroundSystem = BackgroundSystem(scene: self)
+        
+        positionSystem = PositionSystem()
+        
         cameraSystem = CameraSystem(scene: self)
+        
         joystickSystem = JoystickSystem(scene: self)
         attackJoystickSystem = AttackJoystickSystem(scene: self)
-        animationSystem = AnimationSystem(scene: self)
-        movementSystem = MovementSystem(scene: self)
+        
+        healthSystem = HealthSystem()
+        healthBarRenderingSystem = HealthBarRenderingSystem(scene: self)
+        
+        animationSystem = AnimationSystem()
+        
+        movementSystem = MovementSystem()
+        jumpSystem = JumpSystem()
         inputSystem = InputSystem()
+        inputAttackSystem = InputAttackSystem()
+        
+        spawnSystem = SpawnSystem(factory: factory, entityManager: entityManager)
+        
+
+        player = Player()
+        slime = Slime()
+        spawner = Spawner()
+        
+        // TODO: Delete start
+        slime1 = Slime()
+        // TODO: Delete end
+        
+        backgroundEntity = Background()
         
         guard let tileSetGrass = SKTileSet(named: "Grass Tile Set"),
               let tileSetDirt = SKTileSet(named: "Dirt Tile Set") else {
@@ -47,74 +93,72 @@ class GameScene: SKScene {
         }
         
         let tileMapFactoryGrass = TileMapFactory(scene: self, tileSet: tileSetGrass)
-        //let tileMapFactoryDirt = TileMapFactory(scene: self, tileSet: tileSetDirt)
+        let tileMapFactoryDirt = TileMapFactory(scene: self, tileSet: tileSetDirt)
+        
         let tileMapEntityGrass = tileMapFactoryGrass.createDefaultTileMap()
-        //let tileMapEntityDirt = tileMapFactoryDirt.createDefaultTileMap()
         
-        player = Player()
+        let tileMapEntityDirt = tileMapFactoryDirt.createDefaultTileMap()
         
-        entities.append(player)
-        entities.append(tileMapEntityGrass)
-        //entities.append(tileMapEntityDirt)
+        let treeFactory = TreeFactory(scene: self)
         
+        let forestArea = CGRect(x: -4500, y: 450, width: 15000, height: 200)
+        let trees = treeFactory.createTrees(count: 500, in: forestArea)
         
-        if let tileMapComponent = tileMapEntityGrass.component(ofType: TileMapComponent.self) {
-            tileMapSystem.addComponent(tileMapComponent)
-        }
-//        if let tileMapComponent = tileMapEntityDirt.component(ofType: TileMapComponent.self) {
-//            tileMapSystem.addComponent(tileMapComponent)
-//        }
+        entityManager.addSystem(tileMapSystem)
+        entityManager.addSystem(renderSystem)
+        entityManager.addSystem(positionSystem)
+        entityManager.addSystem(backgroundSystem)
+        entityManager.addSystem(physicsSystem)
+        entityManager.addSystem(cameraSystem)
+        entityManager.addSystem(joystickSystem)
+        entityManager.addSystem(attackJoystickSystem)
+        entityManager.addSystem(healthSystem)
+        entityManager.addSystem(healthBarRenderingSystem)
+        entityManager.addSystem(animationSystem)
+        entityManager.addSystem(movementSystem)
+        entityManager.addSystem(inputSystem)
+        entityManager.addSystem(jumpSystem)
+        entityManager.addSystem(inputAttackSystem)
+        entityManager.addSystem(spawnSystem)
         
-        if let physicsComponent = tileMapEntityGrass.component(ofType: PhysicsComponent.self) {
-            physicsSystem.addComponent(physicsComponent)
-        }
-//        if let physicsComponent = tileMapEntityDirt.component(ofType: PhysicsComponent.self) {
-//            physicsSystem.addComponent(physicsComponent)
-//        }
+        entityManager.add(player)
+        entityManager.add(backgroundEntity)
+        entityManager.add(slime)
+        entityManager.add(slime1)
+        entityManager.add(tileMapEntityGrass)
+        entityManager.add(tileMapEntityDirt)
+        entityManager.add(spawner)
+        trees.forEach(entityManager.add)
         
-        if let renderComponent = player.component(ofType: RenderComponent.self) {
-            renderSystem.addComponent(renderComponent)
-        }
-        
-        if let physicsComponent = player.component(ofType: PhysicsComponent.self) {
-            physicsSystem.addComponent(physicsComponent)
-        }
-        
-        if let cameraComponent = player.component(ofType: CameraComponent.self) {
-            cameraSystem.addComponent(cameraComponent)
-        }
-        
-        if let joystickComponent = player.component(ofType: JoystickComponent.self) {
-            joystickSystem.addComponent(joystickComponent)
-        }
-        
-        if let attackJoystickComponent = player.component(ofType: AttackJoystickComponent.self) {
-            attackJoystickSystem.addComponent(attackJoystickComponent)
-        }
-        
-        if let animationComponent = player.component(ofType: AnimationComponent.self) {
-            animationSystem.addComponent(animationComponent)
-        }
-        
-        if let movementComponent = player.component(ofType: MovementComponent.self) {
-            movementSystem.addComponent(movementComponent)
-        }
-        
-        if let inputComponent = player.component(ofType: InputComponent.self) {
-            inputSystem.addComponent(inputComponent)
-        }
     }
     
     override func update(_ currentTime: TimeInterval) {
-        tileMapSystem.update(deltaTime: currentTime)
         renderSystem.update(deltaTime: currentTime)
+        tileMapSystem.update(deltaTime: currentTime)
+        
         physicsSystem.update(deltaTime: currentTime)
+        
+        positionSystem.update(deltaTime: currentTime)
+        
+        animationSystem.update(deltaTime: currentTime)
+        
+        backgroundSystem.update(deltaTime: currentTime)
+        
         cameraSystem.update(deltaTime: currentTime)
+        
         joystickSystem.update(deltaTime: currentTime)
         attackJoystickSystem.update(deltaTime: currentTime)
-        animationSystem.update(deltaTime: currentTime)
-        movementSystem.update(deltaTime: currentTime)
+        
+        healthSystem.update(deltaTime: currentTime)
+        healthBarRenderingSystem.update(deltaTime: currentTime)
+        
         inputSystem.update(deltaTime: currentTime)
+        inputAttackSystem.update(deltaTime: currentTime)
+        
+        movementSystem.update(deltaTime: currentTime)
+        jumpSystem.update(deltaTime: currentTime)
+        
+        spawnSystem.update(deltaTime: currentTime)
     }
     
     override func sceneDidLoad() {

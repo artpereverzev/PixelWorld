@@ -16,13 +16,10 @@ enum AnimationType {
 }
 
 class AnimationComponent: GKComponent {
-    weak var spriteNode: SKSpriteNode?
-    
     var currentAnimationType: AnimationType = .none
     var requestedAnimationType: AnimationType?
     
     var allAnimations: [AnimationType: Animation] = [:]
-    
 }
 
 struct Animation {

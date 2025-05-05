@@ -40,12 +40,14 @@ struct PhysicsBody: OptionSet, Hashable {
     
     static var collisions: [PhysicsBody: [PhysicsBody]] = [
         .player: [.tileMap],
-        .tileMap: [.player]
+        .monster: [.tileMap],
+        .tileMap: [.player, .monster]
     ]
     
     static var contactTest: [PhysicsBody: [PhysicsBody]] = [
-        .player: [.tileMap],
-        .tileMap: [.player]
+        .player: [.tileMap, .monster],
+        .monster: [.tileMap, .player],
+        .tileMap: [.player, .monster]
     ]
     
     var categoryBitMask: UInt32 {
@@ -99,11 +101,8 @@ struct PhysicsBody: OptionSet, Hashable {
 }
 
 class PhysicsComponent: GKComponent {
-    weak var spriteNode: SKSpriteNode?
     weak var tileMapNode: SKTileMapNode?
     
-    //    var bodyCategory: String = PhysicsCategory.wall.rawValue
-    //    var bodyShape: String = PhysicsShape.circle.rawValue
     var bodyCategory: PhysicsCategory
     var bodyShape: PhysicsShape
     var isEdgeLoop: Bool = false

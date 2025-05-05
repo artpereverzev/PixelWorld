@@ -8,26 +8,23 @@ import GameplayKit
 import SpriteKit
 
 class PhysicsSystem: GKComponentSystem<PhysicsComponent> {
-    let scene: SKScene
     let bodyCategory = PhysicsBody()
     
-    init(scene: SKScene) {
-        self.scene = scene
+    override init() {
         super.init(componentClass: PhysicsComponent.self)
     }
     
     override func update(deltaTime seconds: TimeInterval) {
         for component in components {
-            guard let bodyCategory = PhysicsBody.forType(component.bodyCategory) else {
-                continue
-            }
-            
-            // Обработка обычных спрайтов
-            if let sprite = component.spriteNode {
+            guard let bodyCategory = PhysicsBody.forType(component.bodyCategory) else { continue }
+
+            if let render = component.entity?.component(ofType: RenderComponent.self) {
+                let sprite = render.spriteNode
                 configurePhysics(for: sprite, component: component, bodyCategory: bodyCategory)
             }
-            // Обработка тайловых карт
-            else if let tileMap = component.tileMapNode {
+
+            if let map = component.entity?.component(ofType: TileMapComponent.self),
+               let tileMap = map.tileMap {
                 configurePhysics(for: tileMap, component: component, bodyCategory: bodyCategory)
             }
         }
@@ -52,8 +49,9 @@ class PhysicsSystem: GKComponentSystem<PhysicsComponent> {
     }
     
     private func configurePhysics(for tileMap: SKTileMapNode,
-                                 component: PhysicsComponent,
+                                  component: PhysicsComponent,
                                   bodyCategory: PhysicsBody) {
+        
         // Рассчитываем правильный frame с учетом scale
         let scaledWidth = tileMap.frame.width// * tileMap.xScale
         let scaledHeight = tileMap.frame.height// * tileMap.yScale
@@ -82,14 +80,6 @@ class PhysicsSystem: GKComponentSystem<PhysicsComponent> {
         applyCommonPhysics(tileMap.physicsBody, component: component, bodyCategory: bodyCategory)
         tileMap.physicsBody?.isDynamic = false
         tileMap.physicsBody?.affectedByGravity = false
-        
-//        print("TILEMAP: Configuring physics for tileMap at position: \(tileMap.position)")
-//        print("TILEMAP: TileMap frame: \(tileMap.frame), scale: \(tileMap.xScale), \(tileMap.yScale)")
-//        
-//        print("TILEMAP: Final physics body: \(tileMap.physicsBody?.description ?? "nil")")
-//        print("TILEMAP: Category: \(tileMap.physicsBody?.categoryBitMask ?? 0)")
-//        print("TILEMAP: Collision: \(tileMap.physicsBody?.collisionBitMask ?? 0)")
-//        print("TILEMAP: Contact: \(tileMap.physicsBody?.contactTestBitMask ?? 0)")
     }
     
     private func applyCommonPhysics(_ physicsBody: SKPhysicsBody?,
