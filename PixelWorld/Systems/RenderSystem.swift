@@ -17,9 +17,14 @@ class RenderSystem: GKComponentSystem<RenderComponent> {
     
     override func update(deltaTime seconds: TimeInterval) {
         for component in components {
+            guard let position = component.entity?.component(ofType: PositionComponent.self) else {
+                continue
+            }
+
             if component.spriteNode.parent == nil {
+                component.spriteNode.position = position.position
+                component.spriteNode.zPosition = position.zPos
                 scene.addChild(component.spriteNode)
-                component.spriteNode.position = CGPoint(x: 0, y: 200)
             }
         }
     }

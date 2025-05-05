@@ -8,50 +8,64 @@ import GameplayKit
 import SpriteKit
 
 class AnimationSystem: GKComponentSystem<AnimationComponent> {
-    let scene: SKScene
     
-    init(scene: SKScene) {
-        self.scene = scene
+    override init() {
         super.init(componentClass: AnimationComponent.self)
     }
     
     override func update(deltaTime seconds: TimeInterval) {
         for component in components {
-            guard let spriteNode = component.spriteNode else {
+            guard let render = component.entity?.component(ofType: RenderComponent.self) else {
                 continue
             }
+            let spriteNode = render.spriteNode
             
-            if let movement = component.entity?.component(ofType: MovementComponent.self),
-               let input = component.entity?.component(ofType: InputComponent.self) {
-                if movement.isMoving && !movement.isJumping && !input.isAttacking {
-                    component.requestedAnimationType = .moving
-                } else if input.isAttacking {
-                    component.requestedAnimationType = .attacking
-                } else {
-                    component.requestedAnimationType = .idle
-                }
-            }
+            // Определяем тип анимации на основе компонентов сущности
+            let requestedType = determineAnimationType(for: component)
             
-            if let requestedType = component.requestedAnimationType,
-               requestedType != component.currentAnimationType {
-                
-                if let animation = component.allAnimations[requestedType] {
-                    startAnimation(animation, on: spriteNode)
-                    component.currentAnimationType = requestedType
-                    component.requestedAnimationType = nil
-                }
+            // Применяем анимацию, если она изменилась
+            if requestedType != component.currentAnimationType,
+               let animation = component.allAnimations[requestedType] {
+                startAnimation(animation, on: spriteNode)
+                component.currentAnimationType = requestedType
             }
         }
     }
     
-    func startAnimation(_ animation: Animation, on node: SKSpriteNode) {
+    /// Определяет тип анимации на основе компонентов сущности
+    private func determineAnimationType(for component: AnimationComponent) -> AnimationType {
+        guard let entity = component.entity else {
+            return .idle
+        }
+        
+        // Приоритетная логика для специальных сущностей (например, Slime)
+        if entity is Slime {
+            //return .idle
+        }
+        
+        if let attackState = component.entity?.component(ofType: AttackStateComponent.self),
+           let jumpState = component.entity?.component(ofType: JumpStateComponent.self),
+           let movementState = component.entity?.component(ofType: MovementStateComponent.self) {
+            
+            if attackState.isAttacking {
+                return .attacking
+            } else if jumpState.isJumping {
+                return .jumping
+            } else if movementState.isMoving {
+                return .moving
+            }
+        }
+        
+        return .idle
+    }
+    
+    private func startAnimation(_ animation: Animation, on node: SKSpriteNode) {
         node.removeAllActions()
         
         let animationAction = SKAction.animate(with: animation.textures, timePerFrame: animation.timePerFrame)
         
-        if animation.repeatTexturesForever == true {
-            let repeatAction = SKAction.repeatForever(animationAction)
-            node.run(repeatAction)
+        if animation.repeatTexturesForever {
+            node.run(.repeatForever(animationAction))
         } else {
             node.run(animationAction)
         }

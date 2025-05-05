@@ -36,19 +36,21 @@ class TileMapSystem: GKComponentSystem<TileMapComponent> {
             
             if let grassGroup = tileSet.tileGroups.first(where: { $0.name == "Grass" }) {
                 for column in 0..<tileMap.numberOfColumns {
-                    for row in 0..<tileMap.numberOfRows {
+                    for row in (tileMap.numberOfRows - 1)..<tileMap.numberOfRows{
                         tileMap.setTileGroup(grassGroup, forColumn: column, row: row)
                     }
                 }
             }
             if let dirtGroup = tileSet.tileGroups.first(where: { $0.name == "Dirt" }) {
                 for column in 0..<tileMap.numberOfColumns {
-                    for row in 0..<tileMap.numberOfRows {
+                    for row in 0..<tileMap.numberOfRows - 1 {
                         tileMap.setTileGroup(dirtGroup, forColumn: column, row: row)
                     }
                 }
             }
+            tileMap.zPosition = 50
             scene.addChild(tileMap)
+            
             
             if let entity = component.entity,
                let physicsComponent = entity.component(ofType: PhysicsComponent.self) {

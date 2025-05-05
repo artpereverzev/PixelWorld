@@ -8,12 +8,11 @@ import GameplayKit
 import SpriteKit
 
 class CameraComponent: GKComponent {
-    weak var spriteNode: SKSpriteNode?
     
     var cameraNode: SKCameraNode
-    var followTarget: SKNode? // За кем следить (например, игрок)
-    var smoothness: CGFloat = 0.1 // Плавность слежения (0 — резко, 1 — плавно)
-    var zoom: CGFloat = 1.0 // Масштаб
+    var followTarget: SKNode?
+    var smoothness: CGFloat = 0.1 // Greater - Smoother
+    var zoom: CGFloat = 1.0 // Camera Zoom (1.0 - default, without scale)
     
     init(followTarget: SKNode?) {
         self.cameraNode = SKCameraNode()

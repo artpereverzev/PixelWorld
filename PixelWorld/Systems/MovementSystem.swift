@@ -9,50 +9,43 @@ import SpriteKit
 
 
 class MovementSystem: GKComponentSystem<MovementComponent> {
-    private let scene: SKScene
     private var range: CGFloat = 55.0
     
-    init(scene: SKScene) {
-        self.scene = scene
+    override init() {
         super.init(componentClass: MovementComponent.self)
     }
     
     override func update(deltaTime seconds: TimeInterval) {
         for component in components {
-            guard let node = component.spriteNode,
-                  let input = component.entity?.component(ofType: InputComponent.self) else {
+            guard let input = component.entity?.component(ofType: InputComponent.self),
+                  let node = component.entity?.component(ofType: RenderComponent.self)?.spriteNode,
+                  let physicsBody = node.physicsBody,
+                  let movementState = component.entity?.component(ofType: MovementStateComponent.self) else {
                 continue
             }
             
-            let location = CGPoint(x: input.moveX, y: input.moveY)
-            let xAxis = CGFloat(location.x.clamped(to: -range...range))
-            let yAxis = CGFloat(location.y.clamped(v1: -range, v2: range))
+            // 1. Определяем направление (горизонтальное движение)
+            let moveDirection = CGVector(dx: input.moveX, dy: 0)
             
-            let velocityX = xAxis * component.maxSpeed
-            let velocityY = yAxis * component.maxSpeed
-            
-            if velocityX != 0.0 {
-                component.isMoving = true
+            // 2. Применяем движение
+            if moveDirection.dx != 0 {
+                movementState.isMoving = true
+                movementState.facingRight = moveDirection.dx > 0
+                
+                // Для SpriteKit physics
+                physicsBody.velocity.dx = moveDirection.dx * component.maxSpeed
+                
+                // ИЛИ для кастомного движения:
+                // position.x += moveDirection.dx * component.speed * seconds
             } else {
-                component.isMoving = false
+                movementState.isMoving = false
+                physicsBody.velocity.dx = 0 // Торможение
             }
             
-            // 3. Обработка прыжка
-            if input.jumpPressed && component.isGrounded && !component.isJumping && component.countJumps == 0 {
-                component.countJumps += 1
-                component.isJumping = true
-                component.isGrounded = false
-                component.isMoving = false
-
-                node.physicsBody?.applyImpulse(CGVector(dx: velocityX, dy: component.jumpForce / 1.5))//component.jumpForce))
-            }
-            
-            component.direction = CGVector(dx: xAxis, dy: yAxis)
-            node.physicsBody?.velocity.dx = CGFloat(component.direction.dx * component.maxSpeed)
-            
-            if abs(xAxis) > 0.1 {
-                component.facingRight = xAxis > 0
-                node.xScale = component.facingRight ? abs(node.xScale) : -abs(node.xScale)
+            // 3. Отражаем спрайт
+            if abs(input.moveX) > 0.1 {
+                movementState.facingRight = input.moveX > 0
+                node.xScale = movementState.facingRight ? abs(node.xScale) : -abs(node.xScale)
             }
         }
     }

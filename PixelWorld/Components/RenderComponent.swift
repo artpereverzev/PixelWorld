@@ -19,7 +19,7 @@ class RenderComponent: GKComponent {
         self.spriteNode = SKSpriteNode(texture: texture)
         self.spriteNode.setScale(scale)
         
-        // Устанавливаем связь между нодой и сущностью
+        // Connection between spriteNode & entity for next using in PhysicsContactSystem
         self.spriteNode.userData = NSMutableDictionary()
         self.spriteNode.userData?.setValue(entity, forKey: "entity")
         

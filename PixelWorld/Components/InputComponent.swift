@@ -13,12 +13,4 @@ class InputComponent: GKComponent {
     
     var moveX: CGFloat = 0
     var moveY: CGFloat = 0
-    
-    var moveAttackX: CGFloat = 0
-    var moveAttackY: CGFloat = 0
-    
-    var jumpPressed: Bool = false
-    var jumpJustPressed: Bool = false
-    
-    var isAttacking: Bool = false
 }
